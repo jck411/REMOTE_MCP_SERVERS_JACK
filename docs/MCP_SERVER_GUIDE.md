@@ -1,6 +1,6 @@
 # MCP Server Development & Deployment Guide
 
-> A comprehensive guide for building and deploying MCP servers to Google Cloud Run  
+> A comprehensive guide for building and deploying MCP servers to Google Cloud Run
 > **Last Updated:** November 2025 | **MCP SDK Version:** 1.22.0+
 
 ## Table of Contents
@@ -313,14 +313,14 @@ async def tool_name(
     optional_param: int = 10,
 ) -> str:
     """Short description of what this tool does.
-    
+
     This description is sent to the LLM to help it understand
     when and how to use this tool.
-    
+
     Args:
         required_param: Description of this parameter
         optional_param: Description with default value
-    
+
     Returns:
         Description of what's returned
     """
@@ -748,7 +748,7 @@ async def test_server():
             await session.initialize()
             tools = await session.list_tools()
             print(f"Tools: {[t.name for t in tools.tools]}")
-            
+
             # Call a tool
             result = await session.call_tool("hello", {"name": "World"})
             print(f"Result: {result}")
