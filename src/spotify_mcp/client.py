@@ -323,6 +323,10 @@ class SpotifyClient:
             body["position"] = position
         return await self.post(f"/playlists/{playlist_id}/tracks", json_body=body)
 
+    async def unfollow_playlist(self, playlist_id: str) -> dict[str, Any]:
+        """Unfollow (delete) a playlist."""
+        return await self.delete(f"/playlists/{playlist_id}/followers")
+
     # ─────────────────────────────────────────────────────────────────
     # User Profile & Library
     # ─────────────────────────────────────────────────────────────────

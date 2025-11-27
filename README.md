@@ -159,13 +159,21 @@ For stdio-based MCP clients (like Claude Desktop):
 | `spotify_volume` | Set volume (0-100) |
 | `spotify_shuffle` | Toggle shuffle mode |
 | `spotify_repeat` | Set repeat mode |
+| `spotify_seek` | Seek to position in track |
 | `spotify_queue` | View playback queue |
 | `spotify_queue_add` | Add track to queue |
 | `spotify_devices` | List available devices |
 | `spotify_transfer` | Transfer playback to device |
 | `spotify_search` | Search for tracks/albums/artists |
 | `spotify_my_playlists` | Get user's playlists |
+| `spotify_get_playlist_tracks` | Get tracks from a playlist |
+| `spotify_create_playlist` | Create a new playlist |
+| `spotify_delete_playlist` | Delete/unfollow a playlist |
+| `spotify_add_tracks_to_playlist` | Add tracks to a playlist |
+| `spotify_play_context` | Play a playlist/album/artist |
 | `spotify_recently_played` | Get recently played tracks |
+| `spotify_get_saved_tracks` | Get liked/saved tracks |
+| `spotify_play_liked_songs` | Play your Liked Songs |
 | `spotify_like_track` | Save track to library |
 
 ## Architecture

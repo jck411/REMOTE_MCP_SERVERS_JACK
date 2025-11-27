@@ -433,6 +433,300 @@ async def like_track(uri: Optional[str] = None) -> str:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Playlist Management Tools
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@mcp.tool("spotify_get_playlist_tracks")
+async def get_playlist_tracks(playlist_id: str, limit: int = 50) -> str:
+    """Get tracks from a Spotify playlist.
+
+    Args:
+        playlist_id: Spotify playlist ID or URI (e.g., "37i9dQZF1DXcBWIGoYBM5M" or "spotify:playlist:...")
+        limit: Maximum tracks to return (default 50, max 100)
+    """
+    try:
+        client = get_client()
+
+        # Normalize playlist ID
+        if playlist_id.startswith("spotify:playlist:"):
+            playlist_id = playlist_id.split(":")[-1]
+        elif "open.spotify.com/playlist/" in playlist_id:
+            playlist_id = playlist_id.split("/playlist/")[-1].split("?")[0]
+
+        playlist = await client.get_playlist(playlist_id)
+        playlist_name = playlist.get("name", "Unknown Playlist")
+
+        result = await client.get_playlist_tracks(playlist_id, limit=min(limit, 100))
+        items = result.get("items", [])
+
+        if not items:
+            return f"Playlist '{playlist_name}' is empty."
+
+        lines = [f"Playlist: {playlist_name} ({len(items)} tracks shown)"]
+        for i, item in enumerate(items, 1):
+            track = item.get("track")
+            if track:
+                lines.append(f"  {i}. {_format_track(track)}")
+
+        return "\n".join(lines)
+
+    except Exception as e:
+        return _format_error(e)
+
+
+@mcp.tool("spotify_create_playlist")
+async def create_playlist(
+    name: str,
+    description: str = "",
+    public: bool = False,
+) -> str:
+    """Create a new Spotify playlist.
+
+    Args:
+        name: Name for the new playlist
+        description: Optional description
+        public: Whether the playlist should be public (default: False)
+    """
+    try:
+        client = get_client()
+        user = await client.get_me()
+        user_id = user.get("id")
+
+        if not user_id:
+            return "Could not get user ID."
+
+        playlist = await client.create_playlist(
+            user_id=user_id,
+            name=name,
+            public=public,
+            description=description,
+        )
+
+        playlist_url = playlist.get("external_urls", {}).get("spotify", "")
+        return (
+            f"Created playlist: {playlist.get('name')}\n"
+            f"URI: {playlist.get('uri')}\n"
+            f"URL: {playlist_url}"
+        )
+
+    except Exception as e:
+        return _format_error(e)
+
+
+@mcp.tool("spotify_delete_playlist")
+async def delete_playlist(playlist_id: str) -> str:
+    """Delete (unfollow) a Spotify playlist.
+
+    If you own the playlist, it will be deleted. If you don't own it,
+    it will be removed from your library.
+
+    Args:
+        playlist_id: Spotify playlist ID or URI
+    """
+    try:
+        client = get_client()
+
+        # Normalize playlist ID
+        if playlist_id.startswith("spotify:playlist:"):
+            playlist_id = playlist_id.split(":")[-1]
+        elif "open.spotify.com/playlist/" in playlist_id:
+            playlist_id = playlist_id.split("/playlist/")[-1].split("?")[0]
+
+        # Get playlist name first
+        playlist = await client.get_playlist(playlist_id)
+        playlist_name = playlist.get("name", "Unknown")
+
+        await client.unfollow_playlist(playlist_id)
+        return f"Deleted/unfollowed playlist: {playlist_name}"
+
+    except Exception as e:
+        return _format_error(e)
+
+
+@mcp.tool("spotify_add_tracks_to_playlist")
+async def add_tracks_to_playlist(
+    playlist_id: str,
+    track_uris: list[str],
+) -> str:
+    """Add tracks to a Spotify playlist.
+
+    Args:
+        playlist_id: Spotify playlist ID or URI
+        track_uris: List of track URIs to add (e.g., ["spotify:track:xxx", ...])
+    """
+    try:
+        client = get_client()
+
+        # Normalize playlist ID
+        if playlist_id.startswith("spotify:playlist:"):
+            playlist_id = playlist_id.split(":")[-1]
+        elif "open.spotify.com/playlist/" in playlist_id:
+            playlist_id = playlist_id.split("/playlist/")[-1].split("?")[0]
+
+        # Normalize track URIs
+        normalized_uris = []
+        for uri in track_uris:
+            if uri.startswith("spotify:track:"):
+                normalized_uris.append(uri)
+            elif "open.spotify.com/track/" in uri:
+                track_id = uri.split("/track/")[-1].split("?")[0]
+                normalized_uris.append(f"spotify:track:{track_id}")
+            else:
+                # Assume it's just an ID
+                normalized_uris.append(f"spotify:track:{uri}")
+
+        await client.add_tracks_to_playlist(playlist_id, normalized_uris)
+        return f"Added {len(normalized_uris)} track(s) to playlist."
+
+    except Exception as e:
+        return _format_error(e)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Saved/Liked Tracks Tools
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@mcp.tool("spotify_get_saved_tracks")
+async def get_saved_tracks(limit: int = 50) -> str:
+    """Get the user's saved (liked) tracks.
+
+    Args:
+        limit: Maximum tracks to return (default 50, max 50)
+    """
+    try:
+        client = get_client()
+        result = await client.get_saved_tracks(limit=min(limit, 50))
+        items = result.get("items", [])
+
+        if not items:
+            return "You have no saved tracks."
+
+        lines = [f"Your saved tracks ({len(items)} shown):"]
+        for i, item in enumerate(items, 1):
+            track = item.get("track")
+            if track:
+                added_at = item.get("added_at", "")[:10]
+                lines.append(f"  {i}. {_format_track(track)} (saved {added_at})")
+
+        return "\n".join(lines)
+
+    except Exception as e:
+        return _format_error(e)
+
+
+@mcp.tool("spotify_play_liked_songs")
+async def play_liked_songs(
+    device_id: Optional[str] = None,
+    shuffle: bool = True,
+) -> str:
+    """Play the user's Liked Songs collection.
+
+    Note: Spotify doesn't allow direct playback of Liked Songs via API context.
+    This fetches your liked songs and plays them as a track list.
+
+    Args:
+        device_id: Optional device to play on
+        shuffle: Whether to shuffle (default True)
+    """
+    try:
+        client = get_client()
+
+        # Get saved tracks (up to 50)
+        result = await client.get_saved_tracks(limit=50)
+        items = result.get("items", [])
+
+        if not items:
+            return "You have no saved tracks to play."
+
+        # Extract URIs
+        uris = [item["track"]["uri"] for item in items if item.get("track")]
+
+        if not uris:
+            return "No playable tracks found in your library."
+
+        # Optionally shuffle the list before playing
+        if shuffle:
+            import random
+
+            random.shuffle(uris)
+
+        # Play the tracks
+        await client.play(device_id=device_id, uris=uris)
+
+        return f"Now playing your Liked Songs ({len(uris)} tracks, shuffle={'on' if shuffle else 'off'})"
+
+    except Exception as e:
+        return _format_error(e)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Additional Playback Tools
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@mcp.tool("spotify_seek")
+async def seek_position(position_ms: int, device_id: Optional[str] = None) -> str:
+    """Seek to a position in the currently playing track.
+
+    Args:
+        position_ms: Position in milliseconds (e.g., 30000 = 30 seconds)
+        device_id: Optional device ID
+    """
+    try:
+        client = get_client()
+        await client.seek(position_ms, device_id=device_id)
+
+        minutes = position_ms // 60000
+        seconds = (position_ms % 60000) // 1000
+        return f"Seeked to {minutes}:{seconds:02d}"
+
+    except Exception as e:
+        return _format_error(e)
+
+
+@mcp.tool("spotify_play_context")
+async def play_context(
+    context_uri: str,
+    device_id: Optional[str] = None,
+) -> str:
+    """Play a Spotify playlist, album, or artist.
+
+    Use this to play entire collections. For individual tracks, use spotify_play.
+
+    Args:
+        context_uri: Spotify URI for playlist, album, or artist
+                    (e.g., "spotify:playlist:37i9dQZF1DXcBWIGoYBM5M",
+                           "spotify:album:xxx", "spotify:artist:xxx")
+        device_id: Optional device to play on
+    """
+    try:
+        client = get_client()
+
+        # Normalize URI from URL if needed
+        if "open.spotify.com/" in context_uri:
+            if "/playlist/" in context_uri:
+                id_part = context_uri.split("/playlist/")[-1].split("?")[0]
+                context_uri = f"spotify:playlist:{id_part}"
+            elif "/album/" in context_uri:
+                id_part = context_uri.split("/album/")[-1].split("?")[0]
+                context_uri = f"spotify:album:{id_part}"
+            elif "/artist/" in context_uri:
+                id_part = context_uri.split("/artist/")[-1].split("?")[0]
+                context_uri = f"spotify:artist:{id_part}"
+
+        await client.play(device_id=device_id, context_uri=context_uri)
+
+        # Try to get context name
+        context_type = context_uri.split(":")[1] if ":" in context_uri else "context"
+        return f"Now playing {context_type}: {context_uri}"
+
+    except Exception as e:
+        return _format_error(e)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Server Entry Point
 # ─────────────────────────────────────────────────────────────────────────────
 
