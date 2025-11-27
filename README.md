@@ -1,10 +1,30 @@
-# Spotify MCP Server
+# Remote MCP Servers
 
-A standalone MCP server for Spotify integration, deployable to Google Cloud Run.
+A collection of MCP (Model Context Protocol) servers deployable to Google Cloud Run, usable by any MCP-compatible client (Claude, ChatGPT, etc.).
 
-**Live Deployment:** `https://spotify-mcp-421545226088.us-central1.run.app/mcp`
+## Current Servers
 
-## Features
+### Spotify MCP Server
+
+**Live:** `https://spotify-mcp-421545226088.us-central1.run.app/mcp`
+
+Playback control, search, queue management, library access, and device control for Spotify.
+
+## Documentation
+
+📖 **[MCP Server Development Guide](docs/MCP_SERVER_GUIDE.md)** - Comprehensive guide covering:
+- Project structure and configuration
+- FastMCP setup (stateless_http, json_response)
+- Authentication patterns (OAuth, API keys)
+- API client patterns
+- Cloud Run deployment
+- Secret management
+- Testing strategies
+- Common pitfalls and solutions
+
+## Spotify MCP Server
+
+### Features
 
 - **Playback control**: play, pause, skip, volume, shuffle, repeat
 - **Search**: find tracks, albums, artists, playlists
@@ -176,27 +196,15 @@ mcp = FastMCP(
 ├── Dockerfile
 ├── .env.example
 ├── docs/
-│   ├── spotify-mcp-server-guide.md
-│   └── MCP_SERVER_DEVELOPMENT_GUIDE.md
+│   └── MCP_SERVER_GUIDE.md    # Development & deployment guide
 ├── scripts/
 │   └── get_spotify_token.py
 └── src/spotify_mcp/
     ├── __init__.py
-    ├── server.py      # FastMCP tools
-    ├── auth.py        # OAuth token management
-    └── client.py      # Spotify API wrapper
+    ├── server.py              # FastMCP tools
+    ├── auth.py                # OAuth token management
+    └── client.py              # Spotify API wrapper
 ```
-
-## Development Guide
-
-See [docs/MCP_SERVER_DEVELOPMENT_GUIDE.md](docs/MCP_SERVER_DEVELOPMENT_GUIDE.md) for comprehensive documentation on:
-
-- FastMCP configuration options
-- Transport types (stdio vs streamable-http)
-- Cloud Run deployment best practices
-- Secret management
-- Common pitfalls and solutions
-- Testing strategies
 
 ## License
 
