@@ -1,7 +1,7 @@
 """Spotify MCP Server.
 
 FastMCP server exposing Spotify tools via MCP protocol.
-Supports SSE transport for Cloud Run deployment.
+Supports Streamable HTTP transport for Cloud Run deployment.
 """
 
 from __future__ import annotations
@@ -15,7 +15,13 @@ from .auth import SpotifyAuthError
 from .client import SpotifyAPIError, get_client
 
 # Create MCP server instance
-mcp = FastMCP("spotify")
+# stateless_http=True and json_response=True are recommended for Cloud Run
+# as they allow better scalability in multi-node environments
+mcp = FastMCP(
+    "spotify",
+    stateless_http=True,
+    json_response=True,
+)
 
 
 def _format_track(track: dict) -> str:
@@ -433,12 +439,15 @@ async def like_track(uri: Optional[str] = None) -> str:
 
 def main():
     """Run the MCP server."""
-    # Use SSE transport for HTTP-based communication (Cloud Run compatible)
     transport = os.environ.get("MCP_TRANSPORT", "stdio")
 
-    if transport == "sse":
-        # For Cloud Run: run with SSE over HTTP
-        mcp.run(transport="sse")
+    if transport == "http":
+        # For Cloud Run: run with streamable HTTP transport
+        # The server listens on host:port/mcp by default
+        port = int(os.environ.get("PORT", "8080"))
+        mcp.settings.host = "0.0.0.0"
+        mcp.settings.port = port
+        mcp.run(transport="streamable-http")
     else:
         # For local development: use stdio
         mcp.run()

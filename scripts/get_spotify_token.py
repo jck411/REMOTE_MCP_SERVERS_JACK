@@ -3,7 +3,6 @@
 
 import http.server
 import socketserver
-import threading
 import webbrowser
 from urllib.parse import parse_qs, urlencode, urlparse
 
@@ -56,7 +55,9 @@ class CallbackHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_header("Content-type", "text/html")
                 self.end_headers()
                 error = query.get("error", ["unknown"])[0]
-                self.wfile.write(f"<html><body><h1>Error: {error}</h1></body></html>".encode())
+                self.wfile.write(
+                    f"<html><body><h1>Error: {error}</h1></body></html>".encode()
+                )
         else:
             self.send_response(404)
             self.end_headers()
